@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flores amarillas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&display=swap" rel="stylesheet">
+<style>
+  /* 1. Colores guardados como variables */
+  :root {
+    --cielo-arriba: #dfeaf2;
+    --cielo-abajo: #f6e9c0;
+    --tierra: #6b8f4e;
+    --tallo: #3f7a34;
+    --petalo: #f7c916;
+    --petalo-oscuro: #e3a400;
+    --centro: #5a3410;
+    --semilla: #2d1a08;
+    --texto: #23303a;
+    --boton: #23303a;
+    --boton-texto: #fff6d6;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --cielo-arriba: #16283a;
+      --cielo-abajo: #5b4a3a;
+      --tierra: #1f3a2a;
+      --tallo: #4f9a3f;
+      --texto: #f6ecd0;
+      --boton: #f7c916;
+      --boton-texto: #23303a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --cielo-arriba: #16283a;
+    --cielo-abajo: #5b4a3a;
+    --tierra: #1f3a2a;
+    --tallo: #4f9a3f;
+    --texto: #f6ecd0;
+    --boton: #f7c916;
+    --boton-texto: #23303a;
+  }
+
+  /* 2. Estilos generales de la página */
+  * { box-sizing: border-box; }
+  html { height: 100%; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    color: var(--texto);
+    background: linear-gradient(to bottom, var(--cielo-arriba), var(--cielo-abajo));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 1.5rem;
+  }
+  header { max-width: 42rem; width: 100%; }
+  h1 { font-size: clamp(2rem, 6vw, 3.4rem); line-height: 1.05; margin: 0 0 .5rem; font-weight: 700; }
+  p { margin: 0; max-width: 34rem; line-height: 1.5; }
+
+  /* 3. El lienzo SVG */
+  svg { width: 100%; max-width: 56rem; height: auto; display: block; margin-top: 1rem; }
+
+  /* 4. Animación: las flores se mecen con el viento */
+  .balanceo {
+    transform-origin: 0 0;
+    animation: mecer 4s ease-in-out infinite alternate;
+    animation-delay: var(--retraso, 0s);
+  }
+  @keyframes mecer {
+    from { transform: rotate(-2.5deg); }
+    to   { transform: rotate(2.5deg); }
+  }
+  /* La flor nueva aparece poco a poco */
+  .flor.nueva { animation: aparecer 1s ease-out both; }
+  @keyframes aparecer { from { opacity: 0; } }
+
+  button {
+    margin-top: 1rem;
+    font: inherit;
+    font-weight: 700;
+    padding: .7rem 1.3rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--boton);
+    color: var(--boton-texto);
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid var(--petalo-oscuro); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .balanceo, .flor.nueva { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Flores amarillas</h1>
+  <p>Feliz día de las flores amarillas Adricita se que no son de vrd y espero algun dia darte unas de vrd
+    hasta estonces te doy esto y espero que te guste mucho, tkm medio metro, te me cuidas comeras tomaras agua y dormiras bien
+    y tbm decirte que gracias por to y por ser una exelente persona que sos, estoy orgulloso de ti y de como has salido adelante
+    a pesar de todo lo que te paso en el pasado, animos leona tu modes con BGU ponle la correa y puede que sea mas dificil que antes
+    pero ya solo te quedan 2 años que se van volando aun me acuerdo cuando estabas en noveno sigues del mismo porte toda chiquita, toda bonita
+    toda adorable, toda loquita da lo mejor de vos hasta el final Att: Xavier :3</p>
+</header>
+
+<svg id="lienzo" viewBox="0 0 800 480" role="img" aria-label="Un jardín de flores amarillas meciéndose">
+  <!-- Sol -->
+  <circle cx="660" cy="90" r="46" fill="#ffe680" opacity=".75"/>
+  <!-- Suelo -->
+  <path d="M0 440 Q200 415 400 435 T800 430 V480 H0 Z" fill="var(--tierra)"/>
+  <!-- Aquí JavaScript coloca las flores -->
+  <g id="jardin"></g>
+</svg>
+
+<button id="plantar" type="button">Plantar otra flor</button>
+
+<script>
+  const NS = "http://www.w3.org/2000/svg";
+  const jardin = document.getElementById("jardin");
+
+  // Ayuda: crea un elemento SVG con sus atributos en una sola línea
+  function el(nombre, atributos, padre) {
+    const nodo = document.createElementNS(NS, nombre);
+    for (const k in atributos) nodo.setAttribute(k, atributos[k]);
+    if (padre) padre.appendChild(nodo);
+    return nodo;
+  }
+
+  // Dibuja una flor completa: x = posición, alto = altura del tallo, tam = tamaño de la cabeza
+  function crearFlor(x, alto, tam, retraso, animarEntrada) {
+    const flor = el("g", { class: "flor" + (animarEntrada ? " nueva" : ""), transform: `translate(${x} 450)` }, jardin);
+    const mecer = el("g", { class: "balanceo", style: `--retraso:${retraso}s` }, flor);
+
+    // Tallo: curva de Bézier desde el suelo (0,0) hasta la cabeza (0,-alto)
+    el("path", {
+      d: `M0 0 C -18 ${-alto * 0.3}, 18 ${-alto * 0.65}, 0 ${-alto}`,
+      fill: "none", stroke: "var(--tallo)", "stroke-width": 6, "stroke-linecap": "round"
+    }, mecer);
+
+    // Dos hojas
+    el("path", { d: `M0 ${-alto * 0.3} q -34 -8 -44 -34 q 34 -4 44 34 Z`, fill: "var(--tallo)" }, mecer);
+    el("path", { d: `M0 ${-alto * 0.5} q 34 -8 44 -34 q -34 -4 -44 34 Z`, fill: "var(--tallo)" }, mecer);
+
+    // Cabeza de la flor, movida a la punta del tallo
+    const cabeza = el("g", { transform: `translate(0 ${-alto})` }, mecer);
+
+    // Dos anillos de pétalos (el de atrás es más oscuro y va girado a medio paso)
+    const n = 14;
+    for (const [color, desfase] of [["var(--petalo-oscuro)", 180 / n], ["var(--petalo)", 0]]) {
+      for (let i = 0; i < n; i++) {
+        el("ellipse", {
+          cx: 0, cy: -tam * 0.95, rx: tam * 0.26, ry: tam * 0.6,
+          fill: color,
+          transform: `rotate(${(i * 360) / n + desfase})`
+        }, cabeza);
+      }
+    }
+
+    // Centro y semillas en espiral (ángulo áureo, como en un girasol real)
+    el("circle", { r: tam * 0.45, fill: "var(--centro)" }, cabeza);
+    const anguloAureo = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 1; i < 45; i++) {
+      const r = tam * 0.06 * Math.sqrt(i);
+      el("circle", {
+        cx: r * Math.cos(i * anguloAureo), cy: r * Math.sin(i * anguloAureo),
+        r: tam * 0.03, fill: "var(--semilla)"
+      }, cabeza);
+    }
+  }
+
+  // Jardín inicial: [posición x, altura, tamaño, retraso]
+  [[120, 230, 46, 0], [270, 300, 58, -1], [430, 210, 42, -2], [560, 280, 54, -.5], [700, 220, 44, -1.5]]
+    .forEach(([x, a, t, d]) => crearFlor(x, a, t, d, false));
+
+  // El botón planta una flor con valores al azar
+  let total = 5;
+  document.getElementById("plantar").addEventListener("click", () => {
+    if (total >= 16) return;
+    const x = 40 + Math.random() * 720;
+    const alto = 170 + Math.random() * 150;
+    const tam = 36 + Math.random() * 26;
+    crearFlor(x, alto, tam, -Math.random() * 3, true);
+    total++;
+  });
+</script>
+</body>
+</html>
